@@ -48,7 +48,7 @@ def nearest_intersection_object(objects, origin, ray_direction):
     min_dist = np.inf
 
     for idx, dist in enumerate(distances):
-        if dist < min_dist and dist < 0:
+        if dist < min_dist and dist > 0:
             min_dist = dist
             object_idx = idx
 
@@ -63,7 +63,7 @@ def shadowed(min_dist, origin, ray_dir, light_source, objects, object_idx):
     
     min_distance, _ = nearest_intersection_object(objects, shifted_point, light_intersection)
     intersection_to_light_dist = np.linalg.norm(light_source - intersection_point)
-    is_shadowed = min_dist < intersection_to_light_dist
+    is_shadowed = min_distance < intersection_to_light_dist
     
     return is_shadowed, normal_surface, light_intersection
     
@@ -72,8 +72,8 @@ def color(normal_surface, light_intersection, ray_dir, single_object, light):
 	
     illumination = np.zeros(3)
     illumination += single_object.ambient * light.ambient
-    illumination += single_object.diffuse * light.diffuse * normal_surface * light_intersection
-    illumination += single_object.specular * light.specular * (normal_surface * (light_intersection + ray_dir) / np.linalg.norm(light_intersection + ray_dir))**(0.25*single_object.shininess)
+    illumination += single_object.diffuse * light.diffuse * np.dot(normal_surface, light_intersection)
+    illumination += single_object.specular * light.specular * (np.dot(normal_surface, (light_intersection - ray_dir)/np.linalg.norm(light_intersection - ray_dir)))**(0.25*single_object.shininess)
     return np.clip(illumination, 0, 1)
 
 
@@ -94,13 +94,14 @@ class Light:
     self.diffuse = np.array(diffuse)
     self.specular = np.array(specular)
 
-nr = 100
-nc = 100
+nr = 400
+nc = 400
 
 pixels = np.zeros((nr, nc))
 
-camera = np.array([1, 0, 0])
+camera = np.array([0, 0, 1])
 ratio = float(nc) / nr
+# on the xy plane
 screen = (-1, 1 / ratio, 1, -1 / ratio) # left, top, right, bottom
 image = np.zeros([nr, nc, 3])
 
