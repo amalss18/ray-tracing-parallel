@@ -1,26 +1,10 @@
-# harsh - is_shadow
-# amal - is_shadow
-# karthik - frame
-# rohit - frame
-
-
 import numpy as np
-# import pycuda.driver as cuda
-# import pycuda.autoinit
-# from pycuda.compiler import SourceModule
 import matplotlib.pyplot as plt
 
 def ray_direction(origin, point):
     vector = point - origin
     return vector / np.linalg.norm(vector)
   
-# def set_frame(cam_pos, cam_dir, sep_frame, height, AR):
-# 	 frame_center = cam_pos + cam_dir*sep_frame
-#    elevation = np.arctan2(cam_dir[2], np.sqrt(cam_dir[0]**2 + cam_dir[1]**2))
-    
-# 	 frame_tl = frame_center + f
-  
-
 def sphere_intersection(origin, ray_direction, center, radius):
     a = 1 # norm(ray_direction)^{2}
     b = 2 * np.dot(ray_direction, origin - center)
@@ -74,7 +58,8 @@ def color(normal_surface, light_intersection, ray_dir, single_object, light):
     illumination += single_object.ambient * light.ambient
     illumination += single_object.diffuse * light.diffuse * np.dot(normal_surface, light_intersection)
     illumination += single_object.specular * light.specular * (np.dot(normal_surface, (light_intersection - ray_dir)/np.linalg.norm(light_intersection - ray_dir)))**(0.25*single_object.shininess)
-    return np.clip(illumination, 0, 1)
+    return illumination
+    # return np.clip(illumination, 0, 1)
 
 
 
@@ -108,10 +93,14 @@ image = np.zeros([nr, nc, 3])
 objects = np.array([
   					Sphere([-0.2, 0, -1], 0.7, [0.1, 0, 0], [0.7, 0, 0], [1, 1, 1], 100), 
                     Sphere([0.1, -0.3, 0], 0.1, [0.1, 0, 0.1], [0.7, 0, 0.7], [1, 1, 1], 100), 
-                    Sphere([-0.3, 0, 0], 0.15, [0, 0.1, 0], [0, 0.6, 0], [1, 1, 1], 100)
+                    Sphere([-0.3, 0, 0], 0.15, [0, 0.1, 0], [0, 0.6, 0], [1, 1, 1], 100),
+  					Sphere([-0.2, -9000.7, -1], 9000, [0.1, 0.1, 0.1], [0.7, 0, 0], [1, 1, 1], 100), 
 					])
 
-light = Light([5, 5, 5], [1, 1, 1], [1, 1, 1], [1, 1, 1])
+lights = np.array([
+                   Light([5, 5, 5], [1, 1, 1], [1, 1, 1], [1, 1, 1]),
+                   Light([-5, 5, 5], [1, 1, 1], [1, 1, 1], [1, 1, 1]),
+                ])
 
 
 for i, y in enumerate(np.linspace(screen[1], screen[3], nr)):
@@ -124,12 +113,15 @@ for i, y in enumerate(np.linspace(screen[1], screen[3], nr)):
         if nearest_object_idx is None:
         	continue
         
-        is_shadowed, normal_surface, light_intersection = shadowed(min_dist, origin, ray_dir, light.position, objects, nearest_object_idx)
-        if is_shadowed:
-        	continue
+        for light in lights:
+            is_shadowed, normal_surface, light_intersection = shadowed(min_dist, origin, ray_dir, light.position, objects, nearest_object_idx)
+            if is_shadowed:
+                continue
+            
+            image[i, j] += color(normal_surface, light_intersection, ray_dir, objects[nearest_object_idx], light)
         
-        image[i, j] = color(normal_surface, light_intersection, ray_dir, objects[nearest_object_idx], light)
     print("%d/%d" % (i + 1, nr))
 
+image = np.clip(image, 0, 1)
 plt.imsave('image.png', image)
 
