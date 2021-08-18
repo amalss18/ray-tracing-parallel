@@ -124,4 +124,4 @@ for i, y in enumerate(np.linspace(screen[1], screen[3], nr)):
 
 image = np.clip(image, 0, 1)
 plt.imsave('image.png', image)
-
+# testing
